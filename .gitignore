@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env*
+!.env.example
+public/models/
+.cache/
+.vercel/
+*.log
+.vercel
+.artifact-build/
+.codex-finalizer/
+
+CONTINUE.md

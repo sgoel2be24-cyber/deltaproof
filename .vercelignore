@@ -1,0 +1,9 @@
+node_modules
+.git
+.cache
+.codex-finalizer
+.artifact-build
+artifacts
+tests
+docs
+CONTINUE.md

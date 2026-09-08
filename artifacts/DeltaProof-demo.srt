@@ -1,0 +1,39 @@
+1
+00:00:00,000 --> 00:00:15,000
+DeltaProof: private AI scope review for software agencies.
+Captured walkthrough using synthetic example data.
+
+2
+00:00:15,000 --> 00:00:40,000
+A client asks for spreadsheet exports and team invitations.
+The reviewer traces the request against the agreed scope.
+
+3
+00:00:40,000 --> 00:01:15,000
+Local MiniLM retrieves exact clauses. Conflicting evidence stays visible.
+A reviewer proposes 12 hours for export and 20 hours for team access.
+
+4
+00:01:15,000 --> 00:01:45,000
+The proposal contains 32 extra hours and USD 2,880 at USD 90 per hour.
+Parallel dependencies produce one workday of delay after buffer.
+
+5
+00:01:45,000 --> 00:02:10,000
+Deferring invitations removes 20 hours and USD 1,800.
+The export path still determines the delivery delay.
+
+6
+00:02:10,000 --> 00:02:35,000
+Remove the team-account exclusion from retrieved evidence.
+The recommendation changes to insufficient evidence.
+
+7
+00:02:35,000 --> 00:02:55,000
+Export the internal review packet with sources and assumptions.
+No client message or approval happens automatically.
+
+8
+00:02:55,000 --> 00:03:10,000
+22 tests pass. The real-model smoke check matches 10 of 12 cases.
+This small synthetic evaluation is not a contract-accuracy benchmark.

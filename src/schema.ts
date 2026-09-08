@@ -1,0 +1,22 @@
+import { z } from 'zod';
+export const clauseSchema = z.object({id:z.string().min(1).max(40), text:z.string().min(5).max(1200), kind:z.enum(['included','excluded']), source:z.string().min(1).max(120)});
+export const taskSchema = z.object({id:z.string().min(1).max(40),title:z.string().min(1).max(120),hours:z.number().min(0).max(1000),dependsOn:z.array(z.string()).max(30)});
+export const projectSchema = z.object({name:z.string().min(1).max(100),client:z.string().min(1).max(100),baseline:z.array(clauseSchema).min(1).max(50),tasks:z.array(taskSchema).max(40),rate:z.number().min(0).max(10000),hoursPerDay:z.number().min(1).max(24),bufferHours:z.number().min(0).max(1000)}).superRefine((p,c)=>{
+ for(const [label,list] of [['clause',p.baseline],['task',p.tasks]] as const) if(new Set(list.map(t=>t.id)).size!==list.length)c.addIssue({code:'custom',message:`Duplicate ${label} IDs`});
+ const ids=new Set(p.tasks.map(t=>t.id)); for(const t of p.tasks) if(t.dependsOn.some(d=>!ids.has(d)||d===t.id))c.addIssue({code:'custom',message:'Invalid task dependency'});
+ const visited=new Set<string>(), visiting=new Set<string>(); const visit=(id:string):boolean=>{if(visiting.has(id))return false;if(visited.has(id))return true;visiting.add(id);for(const dep of p.tasks.find(t=>t.id===id)?.dependsOn??[])if(!visit(dep))return false;visiting.delete(id);visited.add(id);return true;};
+ if(p.tasks.some(t=>!visit(t.id)))c.addIssue({code:'custom',message:'Dependency cycle'});
+});
+export type Project=z.infer<typeof projectSchema>;
+export type Clause=z.infer<typeof clauseSchema>;
+export type Task=z.infer<typeof taskSchema>;
+export type Evidence={clauseId:string;score:number;text:string;kind:Clause['kind'];source:string};
+export type Finding={id:string;text:string;evidence:Evidence[];recommendation:'review_change'|'review_included'|'clarify';reason:string;branch:string};
+export type Decision='pending'|'include'|'change'|'defer';
+export type Review={decision:Decision;hours:number;taskIds:string[];note:string};
+export type Analysis={findings:Finding[];model:string;durationMs:number;inputHash:string;createdAt:string};
+export const reviewSchema=z.object({decision:z.enum(['pending','include','change','defer']),hours:z.number().min(0).max(1000),taskIds:z.array(z.string()).max(40),note:z.string().max(1000)});
+export const workspaceSchema=z.object({version:z.literal(1),project:projectSchema,request:z.string().max(6000)});
+export const evidenceSchema=z.object({clauseId:z.string(),score:z.number().min(-1.001).max(1.001),text:z.string().max(1200),kind:z.enum(['included','excluded']),source:z.string().max(120)});
+export const analysisSchema=z.object({findings:z.array(z.object({id:z.string(),text:z.string().max(700),evidence:z.array(evidenceSchema).max(3),recommendation:z.enum(['review_change','review_included','clarify']),reason:z.string(),branch:z.string()})).max(12),model:z.string(),durationMs:z.number().min(0),inputHash:z.string(),createdAt:z.string()});
+export const sessionSchema=workspaceSchema.extend({analysis:analysisSchema.nullable().optional(),reviews:z.record(reviewSchema).optional()});
