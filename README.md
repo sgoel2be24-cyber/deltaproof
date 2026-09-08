@@ -73,6 +73,6 @@ Single browser workspace, no collaborative approvals or server sync. Browser sto
 - [Devpost draft](docs/DEVPOST.md)
 - [Demo script](docs/DEMO.md)
 - [Verification](docs/VERIFICATION.md)
-- [Resume checkpoint](CONTINUE.md)
+- A local CONTINUE.md checkpoint preserves build state outside version control.
 
 Model attribution: [MiniLM ONNX model](https://huggingface.co/Xenova/all-MiniLM-L6-v2), Apache-2.0. [Original sentence-transformers model](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2). See [third-party notices](THIRD_PARTY_NOTICES.md). App code: MIT.

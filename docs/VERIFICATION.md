@@ -26,3 +26,6 @@ No independent customer study, legal interpretation benchmark, capacity-aware sc
 
 - New baseline forms: browser rejected a circular dependency, accepted corrected input and saved a changed hourly rate, invalidating prior review.
 - Ten-slide PowerPoint finalized and all slides visually inspected. Captioned screenshot walkthrough encoded as H.264, 1280×820, 3m10s. It is not a continuous screen recording.
+
+- Final public demo https://deltaproof.vercel.app returned HTTP 200 without credentials. Real hosted browser inference produced three cited results in 16.1s on the first observed hosted run, with no captured console errors. This includes network model download, not just inference latency.
+- Public source pushed to https://github.com/sgoel2be24-cyber/deltaproof. Git excludes model weights, local checkpoint, build/runtime directories and deployment credentials.

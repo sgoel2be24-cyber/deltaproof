@@ -8,6 +8,6 @@ Storyboard: “Can we just add spreadsheet export and team invites?” → AI re
 
 Architecture: Vite/TypeScript + inference Web Worker + locally hosted quantized MiniLM + browser storage + JSON/Markdown exports. No server stores customer text; no paid key, no database setup, no external model API. Supabase is intentionally unnecessary for this single-user private workspace. Hosting on Vercel preferred.
 
-Done: research, independent concept selection. Next: model download, app, tests, evaluation, browser verification, deployment, artifacts, final checklist.
+Done: research, independent selection, local model, app, 22 tests, real model evaluation, browser journey/mobile/form checks, public Vercel demo, public source, deck, captioned walkthrough and draft. Remaining: supported video-host URL, participant/Discord details and explicit submission confirmation.
 
 Originality: scope management is an existing category. Claim the combined local inference/evidence removal/dependency tradeoff workflow, not invention of change orders. Gallery currently unpublished; cannot measure event category density.

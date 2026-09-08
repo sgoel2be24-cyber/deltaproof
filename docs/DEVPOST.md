@@ -38,9 +38,9 @@ TypeScript, Vite, Transformers.js, MiniLM, ONNX Runtime, Web Workers, Zod, Vites
 
 ## Links and outstanding participant fields
 - Source: https://github.com/sgoel2be24-cyber/deltaproof
-- Working demo: https://deltaproof.vercel.app (final verification pending).
-- Deck: artifacts/DeltaProof.pptx.
-- Video: artifacts/DeltaProof-demo.mp4 (captioned captured workflow; verify final artifact before upload).
+- Working demo: https://deltaproof.vercel.app (public HTTP 200 and real browser AI verified).
+- Deck: https://github.com/sgoel2be24-cyber/deltaproof/raw/main/artifacts/DeltaProof.pptx
+- Video: https://github.com/sgoel2be24-cyber/deltaproof/raw/main/artifacts/DeltaProof-demo.mp4 (3m10s captioned captured workflow; upload to a supported video host for the embed field).
 - Team: Shikhar. Confirm exact public name, participant profile, any teammates and their matching Devpost emails.
 - No real users, revenue, production deployment history or independently validated savings claimed.
 
