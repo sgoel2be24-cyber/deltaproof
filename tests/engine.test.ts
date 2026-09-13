@@ -29,6 +29,9 @@ describe('Inputs and exports',()=>{
  it('splits source requests preserving their text',()=>{expect(splitRequest('- A request.\n• Another request.')).toEqual(['A request.','Another request.']);});
  it('exports pending state honestly',()=>{const packet=exportPacket(seed,'Request',[decide('1','Request',[])],{},'hash');expect(packet).toContain('Human decision: pending');expect(packet).toContain('not client authorization');expect(packet).toContain('Similarity is not a probability');});
  it('rejects malformed embeddings',()=>{expect(()=>cosine([1],[1,2])).toThrow();expect(()=>cosine([NaN],[1])).toThrow();expect(cosine([1,0],[1,0])).toBe(1);});
+ it('returns zero similarity for zero vectors instead of NaN',()=>{expect(cosine([0,0],[1,1])).toBe(0);});
+ it('caps request splitting at twelve segments',()=>{const many=Array.from({length:20},(_,i)=>`Request number ${i+1}.`).join('\n');expect(splitRequest(many).length).toBe(12);});
+ it('breaks evidence score ties deterministically by clause id',()=>{const f=decide('1','Tie',[ev('excluded',.8,'b'),ev('included',.8,'a')]);expect(f.evidence[0].clauseId).toBe('a');});
 });
 
 it('input identity survives schema property reordering',()=>{expect(stableStringify(seed)).toBe(stableStringify(projectSchema.parse(seed)));});

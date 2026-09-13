@@ -10,6 +10,7 @@ const icon=(name:string)=>`<i data-lucide="${name}" aria-hidden="true"></i>`;
 const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
 let project:Project=structuredClone(seed),request=demoRequest,analysis:Analysis|null=null,reviews:Record<string,Review>={},view='review',busy=false,worker:Worker|undefined,job=0;
 let storageWarning='';
+let activeLines:string[]=[],analysisStart=0,currentHash='';
 let savedSession:ReturnType<typeof sessionSchema.parse>|undefined;
 try{const raw=localStorage.getItem('deltaproof-v1');if(raw){const saved=sessionSchema.parse(JSON.parse(raw));project=saved.project;request=saved.request;savedSession=saved;}}catch{storageWarning='Saved workspace could not be loaded. The sample is available; your stored file has not been overwritten.';}
 const uiState={excluded:new Set<string>()};
@@ -26,7 +27,17 @@ function shell(){
  $('#confirm-reset').onclick=()=>{project=structuredClone(seed);request=demoRequest;invalidate();save();shell();render();toast('Sample restored. All example data is synthetic.');};
  drawIcons();
 }
-function invalidate(){analysis=null;reviews={};uiState.excluded.clear();job++;busy=false;worker?.terminate();worker=undefined;}
+function invalidate(){analysis=null;reviews={};uiState.excluded.clear();job++;if(busy){worker?.terminate();worker=undefined;}busy=false;}
+function ensureWorker(){worker??=new Worker(new URL('./ai.worker.ts',import.meta.url),{type:'module'});worker.onmessage=onWorkerMessage;worker.onerror=()=>{if(!busy)return;busy=false;worker?.terminate();worker=undefined;render();toast('AI worker failed. Reload the page or retry.');};return worker;}
+function onWorkerMessage(e:MessageEvent){
+ const data=e.data;
+ if(data.type==='progress'){if(data.id!==job)return;const p=$('#ai-progress');if(p)p.textContent=data.message;return;}
+ if(data.type==='warm'){if(data.id===job&&!busy){const p=$('#ai-progress');if(p)p.textContent='Private AI ready · warm in this browser';}return;}
+ if(data.id!==job||!busy)return;
+ busy=false;
+ if(data.type==='error'){render();toast(data.message);return;}
+ try{analysis={findings:analyzeVectors(project,activeLines,data.vectors),model:MODEL,durationMs:performance.now()-analysisStart,inputHash:currentHash,createdAt:new Date().toISOString()};save();render();toast('Evidence traced. Review each request before creating a proposal.');}catch{render();toast('The AI returned invalid data. Please retry.');}
+}
 function heading(eyebrow:string,title:string,description:string,action=''){return `<div class="page-heading"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1><p>${description}</p></div>${action}</div>`;}
 function render(){if(view==='review')renderReview();else if(view==='baseline')renderBaseline();else if(view==='timeline')renderTimeline();else renderPacket();drawIcons();}
 function renderReview(){
@@ -45,7 +56,7 @@ function findingsHTML(){return analysis!.findings.map((f,i)=>{
  }).join('')+`<div class="next-step"><p>${icon('git-branch')} Make the tradeoff visible before agreeing to the work.</p><button id="open-impact" class="button">Compare delivery impact ${icon('arrow-right')}</button></div>`;}
 function bindFindings(){
  const get=(id:string)=>reviews[id]??(reviews[id]={decision:'pending',hours:0,taskIds:[],note:''});
- document.querySelectorAll<HTMLSelectElement>('[data-decision]').forEach(el=>el.onchange=()=>{get(el.dataset.decision!).decision=el.value as Review['decision'];save();render();});
+ document.querySelectorAll<HTMLSelectElement>('[data-decision]').forEach(el=>el.onchange=()=>{get(el.dataset.decision!).decision=el.value as Review['decision'];save();const y=window.scrollY;render();window.scrollTo({top:y});document.getElementById(`decision-${el.dataset.decision}`)?.focus({preventScroll:true});});
  document.querySelectorAll<HTMLInputElement>('[data-hours]').forEach(el=>el.oninput=()=>{get(el.dataset.hours!).hours=Math.min(1000,Math.max(0,Number(el.value)||0));save();updateSummary();});
  document.querySelectorAll<HTMLSelectElement>('[data-tasks]').forEach(el=>el.onchange=()=>{get(el.dataset.tasks!).taskIds=Array.from(el.selectedOptions,o=>o.value);save();updateSummary();});
  document.querySelectorAll<HTMLTextAreaElement>('[data-note]').forEach(el=>el.oninput=()=>{get(el.dataset.note!).note=el.value;save();});
@@ -58,11 +69,10 @@ async function runAnalysis(){
  if(request.split(/\n+|(?<=[.!?])\s+(?=[A-Z])/).filter(s=>s.trim()).length>12){toast('Use at most 12 request lines per review.');return;}
  if(lines.some(l=>l.length>700)){toast('Split long requests into lines under 700 characters for reliable matching.');return;}
  busy=true;analysis=null;reviews={};uiState.excluded.clear();const id=++job,start=performance.now();render();drawIcons();
- worker??=new Worker(new URL('./ai.worker.ts',import.meta.url),{type:'module'});
+ const w=ensureWorker();
  const hash=await hashInput({project,request,model:MODEL});if(id!==job)return;
- worker.onmessage=e=>{const data=e.data;if(data.id!==job)return;if(data.type==='progress'){const p=$('#ai-progress');if(p)p.textContent=data.message;return;}busy=false;if(data.type==='error'){render();toast(data.message);return;}try{analysis={findings:analyzeVectors(project,lines,data.vectors),model:MODEL,durationMs:performance.now()-start,inputHash:hash,createdAt:new Date().toISOString()};save();render();toast('Evidence traced. Review each request before creating a proposal.');}catch{render();toast('The AI returned invalid data. Please retry.');}};
- worker.onerror=()=>{if(id!==job)return;busy=false;worker?.terminate();worker=undefined;render();toast('AI worker failed. Reload the page or retry.');};
- worker.postMessage({id,texts:[...lines,...project.baseline.map(c=>c.text)]});
+ activeLines=lines;analysisStart=start;currentHash=hash;
+ w.postMessage({id,texts:[...lines,...project.baseline.map(c=>c.text)]});
 }
 function renderBaseline(){
  let draft=structuredClone(project);
@@ -83,7 +93,7 @@ function renderBaseline(){
 function renderTimeline(){
  const sim=impact(project,reviews),max=Math.max(sim.after.duration,sim.before.duration,1);
  $('#main').innerHTML=heading('WHAT-IF WORKSPACE','Make the tradeoff <span>visible.</span>','Compare the reviewed change against the original dependency plan.')+`<div class="metric-row three"><div class="metric"><span>ADDITIONAL EFFORT</span><strong>${sim.totalHours}<small>hours</small></strong><p>Human-entered, never AI-invented</p></div><div class="metric"><span>PROPOSED AMOUNT</span><strong>${money(sim.cost)}</strong><p>At ${money(project.rate)}/hour</p></div><div class="metric"><span>ESTIMATED DELAY</span><strong>+${sim.delayDays.toFixed(1)}<small>workdays</small></strong><p>${project.bufferHours}h buffer applied to critical path</p></div></div><div class="panel timeline-panel"><div class="panel-heading"><h2>${icon('git-branch')} Delivery dependency map</h2><div class="legend"><span class="legend-before"></span> Baseline <span class="legend-after"></span> With changes</div></div><div class="timeline">${project.tasks.map(t=>`<div class="timeline-row"><div><strong>${esc(t.title)}</strong><small>${t.dependsOn.length?'After '+t.dependsOn.map(id=>esc(project.tasks.find(t=>t.id===id)?.title??id)).join(', '):'Starts independently'}</small></div><div class="track"><div class="bar before" style="left:${sim.before.starts[t.id]/max*100}%;width:${Math.max(0.5,t.hours/max*100)}%"></div><div class="bar after ${sim.affected.includes(t.id)?'changed':''}" style="left:${sim.after.starts[t.id]/max*100}%;width:${Math.max(0.5,(t.hours+(sim.additions[t.id]??0))/max*100)}%"></div></div><span>${sim.after.ends[t.id]}h${sim.affected.includes(t.id)?`<small>+${(sim.after.ends[t.id]-sim.before.ends[t.id]).toFixed(1)}h</small>`:''}</span></div>`).join('')}</div><div class="timeline-axis"><span>Start</span><span>${(max/project.hoursPerDay).toFixed(1)} workdays · dependency-only schedule</span></div><p class="helper">Assumes unlimited parallel staffing between independent tasks. Effort is split equally across selected workstreams. Unassigned extra effort (${sim.unassigned}h) is added sequentially after the plan. This is a planning estimate, not a delivery commitment.</p></div><div class="two-col"><section class="panel tradeoff-panel"><h2>Include it now, or protect the launch?</h2><p class="helper">Toggle a reviewed change to compare scenarios. This does not approve or send anything.</p>${analysis?analysis.findings.map(f=>{const r=reviews[f.id];return r&&(r.decision==='change'||r.decision==='defer')?`<label class="toggle-row"><input type="checkbox" data-toggle="${f.id}" ${r.decision==='change'?'checked':''}><span>${esc(f.text)}<small>${r.hours}h estimated · ${r.decision==='change'?'in proposal':'deferred'}</small></span></label>`:'';}).join('')||'<p>No proposed changes yet. Review a request first.</p>':'<p>Trace a request and enter review estimates first.</p>'}<button id="go-review" class="text-button">Review requests ${icon('arrow-right')}</button></section><section class="panel"><h2>Challenge the evidence</h2><p class="helper">Remove a clause from the retrieved evidence to inspect recommendation sensitivity. The original analysis and decisions stay unchanged. This does not rerun retrieval.</p><label for="ablate">Temporarily hide a retrieved clause</label><select id="ablate"><option value="">Keep all evidence</option>${project.baseline.map(c=>`<option value="${esc(c.id)}">${esc(c.id)} · ${esc(c.kind)}</option>`).join('')}</select><div id="ablation-results" class="ablation-results">Choose a clause to inspect the change in recommendation.</div></section></div>`;
- document.querySelectorAll<HTMLInputElement>('[data-toggle]').forEach(el=>el.onchange=()=>{reviews[el.dataset.toggle!].decision=el.checked?'change':'defer';save();render();});
+ document.querySelectorAll<HTMLInputElement>('[data-toggle]').forEach(el=>el.onchange=()=>{reviews[el.dataset.toggle!].decision=el.checked?'change':'defer';save();const y=window.scrollY;render();window.scrollTo({top:y});document.querySelector<HTMLInputElement>(`[data-toggle="${el.dataset.toggle}"]`)?.focus({preventScroll:true});});
  $('#go-review').onclick=()=>{view='review';shell();render();};
  $('#ablate').onchange=e=>{const id=(e.target as HTMLSelectElement).value;if(!analysis){$('#ablation-results').textContent='Run a review first.';return;}$('#ablation-results').innerHTML=analysis.findings.map(f=>{const without=decide(f.id,f.text,f.evidence.filter(ev=>ev.clauseId!==id));return `<div><strong>${esc(f.text)}</strong><p>${f.branch===without.branch?'Unchanged':'Changed'}: ${esc(f.branch)} → ${esc(without.branch)}</p><small>${esc(without.reason)}</small></div>`;}).join('');};
 }
@@ -93,6 +103,8 @@ function renderPacket(){const pending=analysis?.findings.filter(f=>!reviews[f.id
 }
 function download(name:string,content:string,type:string){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 shell();render();if(storageWarning)toast(storageWarning);
+function warmWorker(){try{ensureWorker().postMessage({id:job,warm:true});}catch{}}
+if('requestIdleCallback' in window)(window as Window & {requestIdleCallback:(cb:()=>void,opts?:{timeout:number})=>void}).requestIdleCallback(warmWorker,{timeout:5000});else setTimeout(warmWorker,2500);
 
 if(savedSession?.analysis){const saved=savedSession;hashInput({project,request,model:MODEL}).then(hash=>{if(saved.analysis?.inputHash===hash&&saved.analysis.findings.every(f=>f.evidence.every(e=>project.baseline.some(c=>c.id===e.clauseId&&c.text===e.text&&c.kind===e.kind&&c.source===e.source)))){try{impact(project,saved.reviews??{});analysis=saved.analysis;reviews=saved.reviews??{};render();}catch{toast('Stored review is invalid. Run a fresh analysis.');}}});}
 
