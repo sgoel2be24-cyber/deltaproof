@@ -27,7 +27,11 @@ describe('Inputs and exports',()=>{
  it('accepts the seed and rejects invalid graphs',()=>{expect(projectSchema.safeParse(seed).success).toBe(true);expect(projectSchema.safeParse({...seed,tasks:[{id:'a',title:'A',hours:1,dependsOn:['a']}]}).success).toBe(false);});
  it('rejects duplicate evidence IDs and numeric bounds',()=>{expect(projectSchema.safeParse({...seed,baseline:[seed.baseline[0],seed.baseline[0]]}).success).toBe(false);expect(reviewSchema.safeParse({decision:'change',hours:Infinity,taskIds:[],note:''}).success).toBe(false);});
  it('splits source requests preserving their text',()=>{expect(splitRequest('- A request.\n• Another request.')).toEqual(['A request.','Another request.']);});
+ it('splits sentences on sentence punctuation followed by a capital',()=>{expect(splitRequest('Please add search. Also add export.')).toEqual(['Please add search.','Also add export.']);});
+ it('keeps a single line with lowercase continuation intact',()=>{expect(splitRequest('please add search to the dashboard, and also a filter')).toEqual(['please add search to the dashboard, and also a filter']);});
  it('exports pending state honestly',()=>{const packet=exportPacket(seed,'Request',[decide('1','Request',[])],{},'hash');expect(packet).toContain('Human decision: pending');expect(packet).toContain('not client authorization');expect(packet).toContain('Similarity is not a probability');});
+ it('exports citations with clause id, source and similarity',()=>{const f=decide('1','Export',[ev('excluded',.8,'SOW-04')]);const packet=exportPacket(seed,'Export',[f],{},'hash');expect(packet).toContain('[SOW-04]');expect(packet).toContain('similarity 0.800');expect(packet).toContain('SOW');});
+ it('buffer exactly covering the delay yields zero delay days',()=>{const i=impact({...seed,bufferHours:12},{a:{decision:'change',hours:12,taskIds:['data'],note:''}});expect(i.delayDays).toBe(0);});
  it('rejects malformed embeddings',()=>{expect(()=>cosine([1],[1,2])).toThrow();expect(()=>cosine([NaN],[1])).toThrow();expect(cosine([1,0],[1,0])).toBe(1);});
  it('returns zero similarity for zero vectors instead of NaN',()=>{expect(cosine([0,0],[1,1])).toBe(0);});
  it('caps request splitting at twelve segments',()=>{const many=Array.from({length:20},(_,i)=>`Request number ${i+1}.`).join('\n');expect(splitRequest(many).length).toBe(12);});

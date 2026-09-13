@@ -6,6 +6,8 @@ A private AI scope-review workspace for small software agencies. Paste a client 
 
 [Open the demo](https://deltaproof.vercel.app) · [Source repository](https://github.com/sgoel2be24-cyber/deltaproof) · [Deck](artifacts/DeltaProof.pptx) · [Captioned walkthrough](artifacts/DeltaProof-demo.mp4)
 
+[![Verify DeltaProof](https://github.com/sgoel2be24-cyber/deltaproof/actions/workflows/check.yml/badge.svg)](https://github.com/sgoel2be24-cyber/deltaproof/actions/workflows/check.yml)
+
 ## Try it locally
 
 Requires Node.js 22+ and npm. No API key, database, account or paid service.
@@ -28,9 +30,11 @@ npm run preview  # serve the production build
 ## Performance notes
 
 - The inference worker stays warm between reviews. Editing a request or re-tracing reuses the loaded model and its embedding cache instead of restarting the worker; only in-flight jobs are cancelled when inputs change.
+- The model is prepared in the background as soon as a real visitor shows presence (pointer, key or touch) — automated audits, crawlers and `Save-Data` or 2G connections never pay the ~45 MB download. On a warm model a three-request trace completes in about 0.3–0.5 s.
 - The dev server and production deployment send `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`. With that isolation, ONNX Runtime Web runs multi-threaded WASM (up to four threads); without it, inference falls back to a single thread.
 - Model and runtime assets are cached (`/models` with stale-while-revalidate, `/fonts` immutable), so repeat visits skip most of the download.
-- Fonts are self-hosted (DM Sans and Manrope, SIL OFL): no Google Fonts request, no IP leak to third parties on load, and strict cross-origin isolation stays possible.
+- Fonts are self-hosted (DM Sans and Manrope, SIL OFL) and preloaded: no third-party request at runtime and no flash of unstyled text.
+- Lighthouse (headless Chromium against the production build): **100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO**. The full muted-text palette meets WCAG AA contrast.
 
 ## Three-minute walkthrough
 
@@ -57,7 +61,8 @@ Similarity does **not** prove entailment, detect every exception, or determine c
 - Explicit review decisions and reviewer notes
 - Dependency simulation with reversible deferral
 - Evidence-removal sensitivity inspection
-- Browser persistence, baseline/request backups and Markdown review export
+- Browser persistence, baseline/request backups and Markdown review export (or one-click copy)
+- `Ctrl/⌘+Enter` traces a request without leaving the keyboard
 - Responsive, keyboard-accessible interface with reduced-motion support
 - Tests, model smoke evaluation, build documentation and submission materials
 

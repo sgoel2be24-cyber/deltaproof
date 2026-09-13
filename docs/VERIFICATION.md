@@ -39,3 +39,16 @@ No independent customer study, legal interpretation benchmark, capacity-aware sc
 - Verified in a real Chromium surface: changing a review decision while scrolled deep into the findings list preserved the scroll position (1200 px before and after), restored keyboard focus to the new decision select, revealed the conditional effort inputs and persisted the session.
 - Verified the preview server sends `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` on the document response, matching the new Vercel header configuration. The deployed production site enables multi-threaded WASM inference through this isolation; browsers without isolation fall back to a single thread automatically.
 - Worker lifecycle change: editing a request no longer terminates the inference worker between reviews; the loaded model and its embedding cache stay warm, and only in-flight jobs are cancelled on input change.
+
+## Rigorous optimization pass (September 13, 2026)
+
+- `npm audit` clean: 0 vulnerabilities after upgrading the dev-only test runner to vitest 5 (the @vitest/mocker advisory required the major). All tests pass on the new runner.
+- 29 Vitest tests passed (four added: sentence-punctuation splitting, lowercase continuation kept intact, export citations with clause id/source/similarity, buffer exactly covering the delay yields zero delay days). TypeScript production build passed.
+- Lighthouse 12 (headless Chromium, production preview): **100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO**. Key metrics: FCP 1.1 s, LCP 1.5 s, TBT 0 ms, CLS 0, Speed Index 1.2 s.
+- Accessibility fix: 16 muted sage text colors were darkened by a uniform channel factor (hue preserved) to reach at least 4.58:1 against every background they appear on, satisfying WCAG AA; visual review confirmed the palette still reads as designed.
+- SEO fix: added `public/robots.txt`; previously the SPA fallback served HTML at /robots.txt, which failed the audit.
+- Verified in a real Chromium surface: font preloads (`<link rel="preload">`) fire before render, `document.fonts.check` passes for both families, and Open Graph tags render for link previews.
+- Verified the intent-gated warm-up in a real Chromium surface: with no user interaction the model is never downloaded (status text unchanged after 2.5 s); after a real pointer input the idle callback arms the warm-up and the status shows "Private AI ready · warm in this browser". `Save-Data` and 2G connections skip the warm-up by design, and automated audits never trigger it.
+- Verified `Ctrl/⌘+Enter` in the request textarea starts the trace (button flipped to "Analyzing…", three cited findings returned with the expected branches), and a warm re-trace reported 0.3 s.
+- Verified the Review packet Copy button: the toast confirms the clipboard write, with an `execCommand` fallback and an explicit failure message.
+- Restored-session behavior re-verified after the changes: reload restored the saved analysis without re-running inference, and the input-hash check still gates restoration.
