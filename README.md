@@ -8,6 +8,8 @@ A private AI scope-review workspace for small software agencies. Paste a client 
 
 [![Verify DeltaProof](https://github.com/sgoel2be24-cyber/deltaproof/actions/workflows/check.yml/badge.svg)](https://github.com/sgoel2be24-cyber/deltaproof/actions/workflows/check.yml)
 
+![DeltaProof workspace: a client request traced to cited scope evidence with review decisions](artifacts/01-workspace.png)
+
 ## Try it locally
 
 Requires Node.js 22+ and npm. No API key, database, account or paid service.
@@ -35,6 +37,7 @@ npm run preview  # serve the production build
 - Model and runtime assets are cached (`/models` with stale-while-revalidate, `/fonts` immutable), so repeat visits skip most of the download.
 - Fonts are self-hosted (DM Sans and Manrope, SIL OFL) and preloaded: no third-party request at runtime and no flash of unstyled text.
 - Lighthouse (headless Chromium against the production build): **100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO**. The full muted-text palette meets WCAG AA contrast.
+- Device choice is benchmark-driven, not fashionable: in a headless-Chrome harness (`bench.html`), quantized WebGPU inference was ~13× slower than multi-threaded WASM (1.45 s vs 0.11 s for the 19-text seed workload) and numerically divergent, so the app stays on multi-threaded WASM q8. Long findings lists render with `content-visibility`, and the packet view has print styles for clean PDF export.
 
 ## Three-minute walkthrough
 

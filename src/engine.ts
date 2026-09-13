@@ -5,8 +5,10 @@ export function splitRequest(text:string):string[]{
  return text.split(/\n+|(?<=[.!?])\s+(?=[A-Z])/).map(s=>s.replace(/^\s*[-*•]\s*/, '').trim()).filter(Boolean).slice(0,12);
 }
 export function cosine(a:number[],b:number[]):number{
- if(!a.length||a.length!==b.length||[...a,...b].some(n=>!Number.isFinite(n)))throw new Error('Invalid embedding');
- const dot=a.reduce((s,x,i)=>s+x*b[i],0);const denom=Math.sqrt(a.reduce((s,x)=>s+x*x,0)*b.reduce((s,x)=>s+x*x,0));return denom?dot/denom:0;
+ if(!a.length||a.length!==b.length)throw new Error('Invalid embedding');
+ let dot=0,na=0,nb=0;
+ for(let i=0;i<a.length;i++){const x=a[i],y=b[i];if(!Number.isFinite(x)||!Number.isFinite(y))throw new Error('Invalid embedding');dot+=x*y;na+=x*x;nb+=y*y;}
+ const denom=Math.sqrt(na*nb);return denom?dot/denom:0;
 }
 export function decide(id:string,text:string,evidence:Evidence[]):Finding{
  const ranked=[...evidence].sort((a,b)=>b.score-a.score||a.clauseId.localeCompare(b.clauseId));

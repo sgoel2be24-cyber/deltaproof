@@ -52,3 +52,16 @@ No independent customer study, legal interpretation benchmark, capacity-aware sc
 - Verified `Ctrl/⌘+Enter` in the request textarea starts the trace (button flipped to "Analyzing…", three cited findings returned with the expected branches), and a warm re-trace reported 0.3 s.
 - Verified the Review packet Copy button: the toast confirms the clipboard write, with an `execCommand` fallback and an explicit failure message.
 - Restored-session behavior re-verified after the changes: reload restored the saved analysis without re-running inference, and the input-hash check still gates restoration.
+
+## Deep optimization pass (September 13, 2026)
+
+- Device-selection benchmark (headless Chrome, `bench.html` + `scripts/bench-driver.mjs` over CDP): on a machine reporting `crossOriginIsolated=true` and WebGPU available, quantized WebGPU inference took 1.45 s for the 19-text seed workload versus 0.11 s for multi-threaded WASM q8, and its vectors diverged from WASM (max cosine deviation ~1.0). fp32 WebGPU could not load the quantized artifact. Conclusion: multi-threaded WASM q8 remains the inference device; the benchmark harness ships with the repo for re-running.
+- 29 Vitest tests passed and the TypeScript production build passed after all changes below.
+- Lighthouse re-run after changes: **100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO** (third consecutive run).
+- Cosine similarity rewritten as a single zero-allocation pass (validates finite inputs inline); behavior locked by the existing malformed-embedding and zero-vector tests.
+- Print stylesheet added: sidebar, controls and progress UI are removed and the review packet prints as clean text with page-break-safe panels, for PDF export via the browser.
+- Long findings lists render with `content-visibility: auto` (with a print override so nothing is clipped on paper).
+- Multi-tab guard: a `storage` listener warns when the workspace was modified in another browser tab.
+- The request panel documents the Ctrl/⌘+Enter shortcut inline and on the button's tooltip.
+- Open Graph image (`public/og-image.png`, 1200×630) generated from the current workspace screenshot and referenced with `twitter:card` for link previews.
+- All seven artifact screenshots (01–07) regenerated against the production build at 1280×720 / 390×844, reflecting the WCAG AA palette, self-hosted fonts and the current UI including the shortcut hint. Captured states match the demo script: empty workspace, evidence with conflict, 32h/$2,880 impact, 12h/$1,080 deferral, SOW-05 ablation, packet, mobile.
