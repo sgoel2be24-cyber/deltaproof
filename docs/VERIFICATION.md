@@ -29,3 +29,13 @@ No independent customer study, legal interpretation benchmark, capacity-aware sc
 
 - Final public demo https://deltaproof.vercel.app returned HTTP 200 without credentials. Real hosted browser inference produced three cited results in 16.1s on the first observed hosted run, with no captured console errors. This includes network model download, not just inference latency.
 - Public source pushed to https://github.com/sgoel2be24-cyber/deltaproof. Git excludes model weights, local checkpoint, build/runtime directories and deployment credentials.
+
+## Performance and privacy optimization pass (September 13, 2026)
+
+- 25 Vitest tests passed (three added: zero-vector cosine, 12-segment request cap, deterministic evidence tie-break). TypeScript production build passed.
+- Node CPU smoke evaluation re-run: 10/12 expected top source or abstention, 19 embeddings in 421 ms. See evaluation.json.
+- Verified in a real Chromium surface: self-hosted DM Sans and Manrope load via `document.fonts.check` with no third-party font request. Google Fonts import removed; fonts ship in `public/fonts` (SIL OFL, credited in THIRD_PARTY_NOTICES.md).
+- Verified in a real Chromium surface: the idle warm-up prepared the local model before any interaction ("Private AI ready · warm in this browser" appeared in the status line), and a full three-request trace then completed in 0.5 s of reported analysis time on the warm model. Earlier hosted observation without warm-up was 16.1 s including network download.
+- Verified in a real Chromium surface: changing a review decision while scrolled deep into the findings list preserved the scroll position (1200 px before and after), restored keyboard focus to the new decision select, revealed the conditional effort inputs and persisted the session.
+- Verified the preview server sends `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` on the document response, matching the new Vercel header configuration. The deployed production site enables multi-threaded WASM inference through this isolation; browsers without isolation fall back to a single thread automatically.
+- Worker lifecycle change: editing a request no longer terminates the inference worker between reviews; the loaded model and its embedding cache stay warm, and only in-flight jobs are cancelled on input change.

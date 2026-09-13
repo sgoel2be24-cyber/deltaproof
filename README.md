@@ -16,7 +16,7 @@ npm run models
 npm run dev
 ```
 
-Open the URL printed by Vite. The model setup downloads a quantized MiniLM model from Hugging Face. Model files remain on your machine and are served with the app. First browser analysis loads the model and WebAssembly runtime. Project text is processed inside a browser worker and never sent to an AI API. Google Fonts requests contain no project text. Local browser storage is not encrypted.
+Open the URL printed by Vite. The model setup downloads a quantized MiniLM model from Hugging Face. Model files remain on your machine and are served with the app. The app prepares the model in the background while you read, so the first trace usually needs no wait. Project text is processed inside a browser worker and never sent to an AI API. No third-party requests occur at runtime; fonts are served locally. Local browser storage is not encrypted.
 
 ```sh
 npm test          # deterministic rules, validation, simulation and export
@@ -24,6 +24,13 @@ npm run eval     # actual CPU model inference, writes docs/evaluation.json
 npm run build    # TypeScript check and production bundle
 npm run preview  # serve the production build
 ```
+
+## Performance notes
+
+- The inference worker stays warm between reviews. Editing a request or re-tracing reuses the loaded model and its embedding cache instead of restarting the worker; only in-flight jobs are cancelled when inputs change.
+- The dev server and production deployment send `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`. With that isolation, ONNX Runtime Web runs multi-threaded WASM (up to four threads); without it, inference falls back to a single thread.
+- Model and runtime assets are cached (`/models` with stale-while-revalidate, `/fonts` immutable), so repeat visits skip most of the download.
+- Fonts are self-hosted (DM Sans and Manrope, SIL OFL): no Google Fonts request, no IP leak to third parties on load, and strict cross-origin isolation stays possible.
 
 ## Three-minute walkthrough
 

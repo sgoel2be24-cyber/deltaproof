@@ -17,7 +17,7 @@ The seeded Northstar example is synthetic. Spreadsheet export produces conflicti
 ## How we built it
 TypeScript and Vite provide the client. A Web Worker runs quantized MiniLM through Transformers.js and ONNX Runtime. Mean-pooled, normalized sentence embeddings support cosine retrieval. Explicit policy branches handle insufficient, conflicting, included and excluded evidence. Zod validates inputs and graph integrity. A pure dependency scheduler computes earliest completion and applies reviewer effort and buffer assumptions. Browser storage preserves the workspace, with an input fingerprint preventing stale review restoration.
 
-The deployed app is static. It needs no API key or server database. Project text never goes to an AI inference API. The small model and WebAssembly runtime load from the app's host.
+The deployed app is static. It needs no API key or server database. Project text never goes to an AI inference API. The small model and WebAssembly runtime load from the app's host. Fonts are self-hosted, so no third-party request occurs at any point of use. The page is served with cross-origin isolation headers, which unlocks multi-threaded WebAssembly inference, and an idle warm-up prepares the model before the first request is traced, so the first analysis no longer waits on a download. The worker stays warm between reviews and reuses its embedding cache.
 
 ## Challenges
 Browser and Node inference have different model-loading defaults. We discovered that in real browser testing, fixed the configuration and reran the workflow. Reload testing also exposed input fingerprint instability caused by field order. Canonical serialization and a regression test fixed it.

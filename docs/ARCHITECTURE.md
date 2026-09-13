@@ -9,9 +9,9 @@ The application is a static TypeScript/Vite client. No backend is needed because
 ## Boundaries
 
 - `schema.ts` enforces input limits, enum values, unique IDs, graph integrity and numeric ranges.
-- `ai.worker.ts` performs local ONNX feature extraction, mean pooling and normalization. Model download happens at setup/build. Text inference happens in-browser. Remote models are disabled. A 200-text in-memory cache avoids repeated inference within one worker.
+- `ai.worker.ts` performs local ONNX feature extraction, mean pooling and normalization. Model download happens at setup/build. Text inference happens in-browser. Remote models are disabled. A 200-text in-memory cache avoids repeated inference within one worker. When the page is cross-origin isolated (COOP/COEP), ONNX Runtime Web runs up to four WASM threads; otherwise it falls back to a single thread. The worker is kept warm between reviews and is primed by an idle-time warm-up so the model is ready before the first request is traced.
 - `engine.ts` consumes only numeric vectors, rejects non-finite values and mismatched dimensions, and maps results to explicit review branches. Requests cannot invoke tools or execute instructions. It never generates source quotes.
-- `main.ts` escapes inserted user text, binds explicit review controls and persists state locally. Changing inputs clears stale analysis and terminates outstanding worker jobs. Saved analysis must match the input hash and baseline source strings before restoration.
+- `main.ts` escapes inserted user text, binds explicit review controls and persists state locally. Changing inputs clears stale analysis; an in-flight worker job is terminated only while it is running, otherwise the warm worker and its embedding cache are reused. Saved analysis must match the input hash and baseline source strings before restoration. Review-decision re-renders preserve scroll position and keyboard focus.
 - `schedule` computes earliest start/end over a DAG. Extra effort flows through downstream tasks; independent tasks may overlap. This is not resource-constrained scheduling.
 
 ## Decision policy
